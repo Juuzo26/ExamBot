@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NHMĐH 502047 — OS Study App</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#080b10;--s1:#0f1318;--s2:#161c23;--s3:#1e2630;
+  --br:#242d38;--br2:#2e3a47;
+  --g:#00f5a0;--g2:#00d4ff;--y:#ffd166;--r:#ff6b6b;--p:#b388ff;
+  --tx:#dde4ed;--mu:#6b7a8d;--mu2:#4a5568;
+  --ch1:#00f5a0;--ch2:#00d4ff;--ch3:#ffd166;--ch4:#ff6b6b;--ch5:#b388ff;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--tx);font-family:'Syne',system-ui,sans-serif;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,245,160,.016) 1px,transparent 1px),linear-gradient(90deg,rgba(0,245,160,.016) 1px,transparent 1px);background-size:44px 44px;pointer-events:none;z-index:0}
+
+/* NAV */
+nav{background:rgba(8,11,16,.93);backdrop-filter:blur(12px);border-bottom:1px solid var(--br);position:sticky;top:0;z-index:500}
+.nav-i{max-width:1100px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:14px;height:52px;flex-wrap:nowrap}
+.brand{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--g);letter-spacing:.5px;white-space:nowrap;flex-shrink:0}
+.tabs{display:flex;gap:3px;flex-shrink:0}
+.tb{background:transparent;border:1px solid transparent;color:var(--mu);padding:5px 13px;border-radius:5px;cursor:pointer;font-family:'Syne',sans-serif;font-size:12px;font-weight:600;letter-spacing:.3px;transition:all .15s}
+.tb.on{background:rgba(0,245,160,.1);border-color:rgba(0,245,160,.3);color:var(--g)}
+
+/* CONNECTION STATUS */
+#conn-status{margin-left:auto;display:flex;align-items:center;gap:7px;flex-shrink:0}
+#conn-dot{width:7px;height:7px;border-radius:50%;background:var(--mu2);flex-shrink:0;transition:background .3s}
+#conn-dot.ok{background:var(--g);box-shadow:0 0 6px var(--g)}
+#conn-dot.err{background:var(--r);box-shadow:0 0 6px var(--r)}
+#conn-dot.checking{background:var(--y);animation:blink .8s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+#conn-label{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--mu);white-space:nowrap}
+#conn-label.ok{color:var(--g)}
+#conn-label.err{color:var(--r)}
+
+
+.wrap{max-width:1100px;margin:0 auto;padding:28px 20px 100px;position:relative;z-index:1}
+.panel{display:none}.panel.on{display:block}
+
+/* EXAM STRIP */
+.strip{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--br);border-radius:8px;overflow:hidden;margin-bottom:32px;border:1px solid var(--br)}
+.si{background:var(--s1);padding:14px 16px}
+.si .lbl{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--mu2);text-transform:uppercase;margin-bottom:6px}
+.si .val{font-size:15px;font-weight:700}.si .val.hl{color:var(--g);font-family:'IBM Plex Mono',monospace}
+
+/* CHAPTER SECTIONS */
+.ch-wrap{margin-bottom:28px}
+.ch-head{display:flex;align-items:center;gap:12px;margin-bottom:14px;cursor:pointer;user-select:none;padding:10px 14px;background:var(--s1);border:1px solid var(--br);border-radius:8px;transition:border-color .2s}
+.ch-head:hover{border-color:var(--br2)}
+.ch-tag{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1.5px;padding:3px 10px;border-radius:3px;white-space:nowrap;flex-shrink:0}
+.ch-title-txt{font-size:16px;font-weight:800;letter-spacing:-.2px;flex:1}
+.ch-toggle{color:var(--mu);font-size:12px;transition:transform .25s;flex-shrink:0;font-family:'IBM Plex Mono',monospace}
+.ch-wrap.open .ch-toggle{transform:rotate(90deg)}
+.ch-body{display:none}.ch-wrap.open .ch-body{display:block}
+
+/* TOPIC BLOCKS */
+.tb-block{background:var(--s1);border:1px solid var(--br);border-radius:9px;margin-bottom:8px;overflow:hidden}
+.tb-block-head{display:flex;align-items:center;gap:12px;padding:13px 17px;cursor:pointer;transition:background .15s}
+.tb-block-head:hover{background:var(--s2)}
+.td{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:1px}
+.tq{font-size:13px;font-weight:600;flex:1;line-height:1.45}
+.ta{color:var(--mu);font-size:11px;transition:transform .22s;flex-shrink:0;font-family:'IBM Plex Mono',monospace}
+.tb-block.open .ta{transform:rotate(90deg)}
+.tb-ans{display:none;padding:0 17px 16px 36px;border-top:1px solid var(--br)}
+.tb-block.open .tb-ans{display:block}
+.ai-wrap{padding-top:13px;font-size:13px;color:#b0bcc8;line-height:1.78}
+.ai-wrap strong{color:var(--tx);font-weight:600}
+.kw{display:inline-block;background:rgba(0,245,160,.08);border:1px solid rgba(0,245,160,.2);color:var(--g);font-family:'IBM Plex Mono',monospace;font-size:11px;padding:1px 7px;border-radius:3px;margin:1px 2px}
+.bad{color:var(--r)}.note{color:var(--y)}
+.ul{margin:8px 0 4px 14px;display:flex;flex-direction:column;gap:5px}
+.ul li{list-style:none;padding-left:14px;position:relative;font-size:13px}
+.ul li::before{content:'▸';position:absolute;left:0;color:var(--g);font-size:10px;top:2px}
+.hb{background:var(--s2);border-left:3px solid var(--y);border-radius:0 6px 6px 0;padding:10px 14px;margin-top:10px;font-size:12px;color:var(--mu);line-height:1.6}
+.hb.p{border-color:var(--p)}.hb strong{color:var(--y)}.hb.p strong{color:var(--p)}
+.star-pill{display:inline-flex;align-items:center;gap:5px;background:rgba(0,245,160,.06);border:1px solid rgba(0,245,160,.15);color:var(--g);font-size:11px;padding:4px 11px;border-radius:20px;cursor:pointer;margin-top:12px;transition:all .15s;font-family:'IBM Plex Mono',monospace;letter-spacing:.3px}
+.star-pill:hover{background:rgba(0,245,160,.15);border-color:rgba(0,245,160,.4)}
+
+/* POPUP CHAT */
+#popup{display:none;position:fixed;bottom:20px;right:20px;width:380px;height:490px;background:var(--s1);border:1px solid rgba(0,245,160,.4);border-radius:14px;flex-direction:column;z-index:1000;box-shadow:0 16px 60px rgba(0,0,0,.75)}
+#popup.show{display:flex;animation:ps .2s ease}
+@keyframes ps{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.ph{padding:13px 16px;border-bottom:1px solid var(--br);display:flex;align-items:flex-start;gap:10px}
+.ph-icon{font-size:17px;flex-shrink:0;margin-top:1px}
+.ph-topic{font-size:12px;font-weight:700;color:var(--g);line-height:1.3;flex:1}
+.ph-sub{font-size:10px;color:var(--mu);margin-top:2px;font-family:'IBM Plex Mono',monospace}
+.pc{background:none;border:none;color:var(--mu);cursor:pointer;font-size:22px;line-height:1;flex-shrink:0}
+.pm-wrap{flex:1;overflow-y:auto;padding:13px;display:flex;flex-direction:column;gap:9px}
+.pm-wrap::-webkit-scrollbar{width:3px}.pm-wrap::-webkit-scrollbar-thumb{background:var(--br2);border-radius:2px}
+.p-snip{background:var(--s2);border:1px solid var(--br);border-radius:7px;padding:10px 13px;font-size:11px;color:var(--mu);line-height:1.6;font-style:italic}
+.pm{border-radius:8px;padding:9px 13px;max-width:88%;font-size:12px;line-height:1.65;white-space:pre-wrap}
+.pm.u{align-self:flex-end;background:rgba(0,245,160,.09);border:1px solid rgba(0,245,160,.22)}
+.pm.a{align-self:flex-start;background:var(--s2);border:1px solid var(--br)}
+.pm.ld{color:var(--mu);font-style:italic;border-color:transparent;background:transparent}
+.pi-row{padding:10px 13px;border-top:1px solid var(--br);display:flex;gap:8px}
+.pi-row input{flex:1;background:var(--s2);border:1px solid var(--br);border-radius:6px;padding:8px 11px;color:var(--tx);font-size:12px;outline:none;font-family:'Syne',sans-serif}
+.pi-row input:focus{border-color:rgba(0,245,160,.45)}
+.pi-row button{background:var(--g);border:none;border-radius:6px;padding:8px 14px;cursor:pointer;font-weight:800;color:#080b10;font-size:14px}
+.pi-row button:disabled{background:var(--br);cursor:not-allowed}
+
+/* MAIN CHAT */
+.cw{display:flex;flex-direction:column;height:calc(100vh - 145px)}
+.ch2{margin-bottom:14px}.ch2 h2{font-size:22px;font-weight:800;margin-bottom:4px}.ch2 p{font-size:12px;color:var(--mu)}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:13px}
+.chip{background:var(--s1);border:1px solid var(--br);border-radius:20px;padding:6px 14px;color:var(--mu);font-size:12px;cursor:pointer;transition:border-color .15s;font-family:'Syne',sans-serif}
+.chip:hover{border-color:rgba(0,245,160,.35);color:var(--tx)}
+.mbox{flex:1;overflow-y:auto;background:var(--s1);border:1px solid var(--br);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:12px;margin-bottom:11px}
+.mbox::-webkit-scrollbar{width:3px}.mbox::-webkit-scrollbar-thumb{background:var(--br2);border-radius:2px}
+.empty{text-align:center;margin-top:60px;color:var(--mu)}.empty .ico{font-size:44px;margin-bottom:12px}
+.mf{border-radius:10px;padding:11px 15px;font-size:14px;line-height:1.7;white-space:pre-wrap;max-width:78%}
+.mf.u{align-self:flex-end;background:rgba(0,245,160,.09);border:1px solid rgba(0,245,160,.22)}
+.mf.a{align-self:flex-start;background:var(--s2);border:1px solid var(--br)}
+.mf.ld{color:var(--mu);font-style:italic;border-color:transparent;background:transparent}
+.ir{display:flex;gap:10px}
+.ir input{flex:1;background:var(--s1);border:1px solid var(--br);border-radius:8px;padding:11px 15px;color:var(--tx);font-size:14px;outline:none;font-family:'Syne',sans-serif}
+.ir input:focus{border-color:rgba(0,245,160,.4)}
+.ir button{background:var(--g);border:none;border-radius:8px;padding:11px 20px;cursor:pointer;font-weight:800;color:#080b10;font-size:16px}
+.ir button:disabled{background:var(--br);cursor:not-allowed}
+
+/* EXERCISES */
+.ex-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:9px;margin-bottom:18px}
+.etb{background:var(--s1);border:1px solid var(--br);border-radius:9px;padding:14px;cursor:pointer;text-align:left;color:var(--mu);transition:all .15s}
+.etb.on{background:rgba(0,245,160,.08);border-color:rgba(0,245,160,.4);color:var(--g)}
+.etb .ee{font-size:20px;margin-bottom:6px}.etb .en{font-size:13px;font-weight:700}.etb .ed{font-size:11px;color:var(--mu2);margin-top:3px}
+.cfg{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap;align-items:flex-end}
+.cf{display:flex;flex-direction:column;gap:5px}
+.cf label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--mu2);text-transform:uppercase}
+.cf select{background:var(--s1);border:1px solid var(--br);border-radius:6px;padding:9px 11px;color:var(--tx);font-size:12px;outline:none;min-width:155px;font-family:'Syne',sans-serif}
+.gbtn{background:var(--g);border:none;border-radius:8px;padding:10px 22px;cursor:pointer;font-weight:800;color:#080b10;font-size:13px;font-family:'Syne',sans-serif}
+.gbtn:disabled{background:var(--br);cursor:not-allowed;color:var(--mu)}
+.ex-list{display:flex;flex-direction:column;gap:13px}
+.ec{background:var(--s1);border:1px solid var(--br);border-radius:10px;padding:18px}
+.ec.ok{border-color:rgba(0,245,160,.45)}.ec.ng{border-color:rgba(255,107,107,.45)}
+.eq{font-size:14px;font-weight:700;margin-bottom:13px;line-height:1.5}
+.eopts{display:flex;flex-direction:column;gap:8px}
+.eopt{background:var(--s2);border:1px solid var(--br);border-radius:6px;padding:9px 13px;cursor:pointer;text-align:left;color:var(--mu);font-size:13px;transition:all .15s;font-family:'Syne',sans-serif;width:100%}
+.eopt:hover:not([disabled]){border-color:rgba(0,245,160,.3);color:var(--tx)}
+.eopt.sel{background:rgba(0,245,160,.07);border-color:rgba(0,245,160,.35);color:var(--tx)}
+.eopt.right{background:rgba(0,245,160,.1);border-color:var(--g);color:var(--g)}
+.eopt.bad{background:rgba(255,107,107,.1);border-color:var(--r);color:var(--r)}
+.eexp{margin-top:10px;padding:9px 13px;background:var(--s2);border-radius:6px;font-size:12px;color:var(--mu);display:none;line-height:1.6}
+.tf-row{display:flex;gap:10px}
+.tf-b{background:var(--s2);border:1px solid var(--br);border-radius:6px;padding:9px 24px;cursor:pointer;font-size:13px;font-weight:700;transition:all .15s;font-family:'Syne',sans-serif}
+.tf-b.t{color:#00f5a0}.tf-b.f{color:#ff6b6b}
+.tf-b.st{background:rgba(0,245,160,.1);border-color:rgba(0,245,160,.4)}
+.tf-b.sf{background:rgba(255,107,107,.1);border-color:rgba(255,107,107,.4)}
+.fi{width:100%;background:var(--s2);border:1px solid var(--br);border-radius:6px;padding:9px 13px;color:var(--tx);font-size:13px;outline:none;font-family:'Syne',sans-serif;margin-top:8px}
+.fi:focus{border-color:rgba(0,245,160,.4)}
+textarea.fi{min-height:80px;resize:vertical}
+.fc-card{min-height:110px;cursor:pointer;user-select:none;position:relative}
+.fc-card .fh{position:absolute;top:10px;right:13px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--mu)}
+.fc-term{font-size:22px;font-weight:800;color:var(--g)}
+.fc-def{font-size:13px;line-height:1.7}
+.sc-ans{margin-top:10px;padding:11px 14px;background:rgba(0,245,160,.05);border:1px solid rgba(0,245,160,.18);border-radius:6px;font-size:12px;color:#94a8b8;display:none;line-height:1.7}
+.acts{display:flex;gap:12px;margin-top:20px;align-items:center}
+.cbtn{background:var(--g);border:none;border-radius:8px;padding:10px 26px;cursor:pointer;font-size:14px;font-weight:800;color:#080b10;font-family:'Syne',sans-serif}
+.rbtn{background:var(--s2);border:1px solid var(--br);border-radius:8px;padding:10px 22px;cursor:pointer;font-size:13px;color:var(--mu);font-family:'Syne',sans-serif}
+.sb{background:rgba(0,245,160,.1);border:1px solid rgba(0,245,160,.3);border-radius:6px;padding:5px 16px;font-size:14px;font-weight:800;color:var(--g);font-family:'IBM Plex Mono',monospace}
+.sb.ng{background:rgba(255,107,107,.1);border-color:rgba(255,107,107,.3);color:var(--r)}
+.sl{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--mu2);margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.sl::after{content:'';flex:1;height:1px;background:var(--br)}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-i">
+    <span class="brand">// NHMĐH</span>
+    <div class="tabs">
+      <button class="tb on" onclick="go('study',this)">📚 Study Guide</button>
+      <button class="tb" onclick="go('exercises',this)">🎯 Luyện Tập</button>
+      <button class="tb" onclick="go('chat',this)">💬 AI Chat</button>
+    </div>
+    <div id="conn-status">
+      <div id="conn-dot" class="checking"></div>
+      <span id="conn-label">connecting...</span>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<!-- ══════════════════════════ STUDY ══════════════════════════ -->
+<div id="p-study" class="panel on">
+  <div style="margin-bottom:26px">
+    <div style="font-size:28px;font-weight:800;letter-spacing:-.5px;margin-bottom:6px">Ôn Thi Giữa Kỳ <span style="color:var(--g)">—</span> Hệ Điều Hành</div>
+    <div style="font-size:13px;color:var(--mu)">Hover bất kỳ câu hỏi → click <span style="color:var(--g)">⭐ Chat</span> để hỏi AI riêng về chủ đề đó</div>
+  </div>
+  <div class="strip">
+    <div class="si"><div class="lbl">Format</div><div class="val">Trắc nghiệm MCQ</div></div>
+    <div class="si"><div class="lbl">Số câu</div><div class="val hl">30 câu</div></div>
+    <div class="si"><div class="lbl">Thời gian</div><div class="val hl">40 phút</div></div>
+    <div class="si"><div class="lbl">Làm bài</div><div class="val">Trên máy tính</div></div>
+    <div class="si"><div class="lbl">Phạm vi</div><div class="val">Ch.1 → 5A</div></div>
+  </div>
+
+  <!-- CH1 -->
+  <div class="ch-wrap open" id="ch1">
+    <div class="ch-head" onclick="toggleCh('ch1')">
+      <span class="ch-tag" style="background:rgba(0,245,160,.1);border:1px solid rgba(0,245,160,.3);color:var(--ch1)">CH.01</span>
+      <span class="ch-title-txt" style="color:var(--ch1)">Giới Thiệu Hệ Điều Hành</span>
+      <span class="ch-toggle">▶</span>
+    </div>
+    <div class="ch-body">
+      <div class="tb-block open">
+        <div class="tb-block-head" onclick="toggleTb(this)"><div class="td" style="background:var(--ch1)"></div><div class="tq">Hệ điều hành là gì? Vai trò đối với phần mềm ứng dụng?</div><span class="ta">▶</span></div>
+        <div class="tb-ans"><div class="ai-wrap">
+          <strong>Định nghĩa:</strong> HĐH là phần mềm <span class="kw">trung gian</span> giữa phần cứng và người dùng/ứng dụng.
+          <ul class="ul"><li><strong>Với người dùng:</strong> cung cấp giao diện thuận tiện (CLI, GUI, Touch)</li><li><strong>Với ứng dụng:</strong> cung cấp môi trường thực thi, truy cập tài nguyên qua System Call thay vì trực tiếp phần cứng</li><li><strong>Với phần cứng:</strong> quản lý CPU, RAM, I/O, file</li></ul>
+          <div class="hb"><strong>3 mục tiêu HĐH:</strong> (1) Tiện lợi người dùng &nbsp;(2) Hiệu quả tài nguyên &nbsp;(3) Khả năng mở rộng</div>
+        </div><span class="star-pill" onclick="openPopup('Vai trò và định nghĩa HĐH','HĐH là phần mềm trung gian giữa phần cứng và ứng dụng. Quản lý tài nguyên. 3 mục tiêu: tiện lợi, hiệu quả, mở rộng.',event)">⭐ Chat về chủ đề này</span></div>
+      </div>
+      <div class="tb-block">
+        <div class="tb-block-head" onclick="toggleTb(this)"><div class="td" style="background:var(--ch1)"></div><div class="tq">Nhân (Kernel) là gì? Hai chế độ hoạt động thông dụng nhất?</div><span class="ta">▶</span></div>
+        <div class="tb-ans"><div class="ai-wrap">
+          <strong>Kernel:</strong> phần lõi của HĐH, <span class="kw">luôn chạy trong bộ nhớ</span>, kiểm soát toàn bộ phần cứng, chạy ở Kernel Mode.
+          <ul class="ul"><li><span class="kw">User Mode</span> — ứng dụng chạy ở đây, quyền hạn chế, KHÔNG thể trực tiếp truy cập phần cứng</li><li><span class="kw">Kernel Mode</span> — HĐH chạy ở đây, toàn quyền truy cập phần cứng</li></ul>
+          Chuyển chế độ: từ User sang Kernel qua <span class="kw">System Call</span> hoặc <span class="kw">Ngắt (Interrupt)</span>.
+          <div class="hb"><strong class="bad">Lệnh đặc quyền (Privileged Instruction):</strong> chỉ chạy được ở Kernel Mode. Nếu User Mode cố chạy → <strong>trap</strong> → HĐH bắt lỗi và <strong>chấm dứt tiến trình</strong>.</div>
+        </div><span class="star-pill" onclick="openPopup('Kernel và 2 chế độ hoạt động','Kernel là lõi OS, chạy ở Kernel Mode. User Mode: quyền hạn chế. Kernel Mode: toàn quyền. Privileged instructions chỉ ở Kernel Mode, vi phạm → trap.',event)">⭐ Chat về chủ đề này</span></div>
+      </div>
+      <div class="tb-block">
+        <div class="tb-block-head" onclick="toggleTb(this)"><div class="td" style="background:var(--ch1)"></div><div class="tq">Ngắt (Interrupt) là gì? Cơ chế hoạt động?</div><span class="ta">▶</span></div>
+        <div class="tb-ans"><div class="ai-wrap">
+          <strong>Ngắt:</strong> tín hiệu từ phần cứng (hoặc phần mềm) báo CPU có sự kiện cần xử lý ngay.
+          <ul class="ul"><li>CPU <strong>dừng công việc hiện tại</strong>, lưu trạng thái (PC, thanh ghi)</li><li>Chạy <strong>interrupt handler</strong> (trình xử lý ngắt)</li><li>Sau khi xử lý xong → <strong>tiếp tục công việc cũ</strong></li></ul>
+          <div class="hb"><strong>Tại sao quan trọng?</strong> Ngắt là <strong>cơ chế nền tảng</strong> của: I/O bất đồng bộ, đa nhiệm, bảo vệ CPU timeout. Không có ngắt → CPU phải polling liên tục.</div>
+        </div><span class="star-pill" onclick="openPopup('Ngắt (Interrupt)','Tín hiệu phần cứng báo CPU. CPU dừng, lưu trạng thái, chạy interrupt handler, tiếp tục. Cơ chế nền tảng của I/O async và đa nhiệm.',event)">⭐ Chat về chủ đề này</span></div>
+      </div>
+      <div class="tb-block">
+        <div class="tb-block-head" onclick="toggleTb(this)"><div class="td" style="background:var(--ch1)"></div><div class="tq">Ảo hoá (Virtualization) là gì? Máy ảo dùng phương pháp nào?</div><span class="ta">▶</span></div>
+        <div class="tb-ans"><div class="ai-wrap">
+          <strong>Ảo hoá:</strong> kỹ thuật tạo ra phiên bản ảo của tài nguyên (CPU, RAM, thiết bị).
+          <ul class="ul"><li>Máy ảo (VM) chạy HĐH riêng trên cùng phần cứng vật lý</li><li>Mỗi VM "nghĩ" nó sở hữu toàn bộ phần cứng</li><li>Phương pháp: <span class="kw">Abstraction / Virtualization</span></li></ul>
+          <div class="hb"><strong>Ví dụ:</strong> VMware, VirtualBox — chạy nhiều OS trên 1 máy vật lý.</div>
+        </div><span class="star-pill" onclick="openPopup('Ảo hoá và Máy ảo','Ảo hoá tạo phiên bản ảo của tài nguyên. VM chạy HĐH riêng trên cùng phần cứng. Phương pháp: abstraction/virtualization.',event)">⭐ Chat về chủ đề này</span></div>
+      </div>
+      <div class="tb-block">
+        <div class="tb-block-head" onclick="toggleTb(this)"><div class="td" style="background:var(--ch1)"></div><div class="tq">Mối quan hệ Đa nhiệm (Multitasking) và Đa chương (Multiprogramming)?</div><span class="ta">▶</span></div>
+        <div class="tb-ans"><div class="ai-wrap">
+          <ul class="ul"><li><span class="kw">Đa chương (Multiprogramming)</span>: nhiều chương trình trong RAM cùng lúc. CPU không idle — nếu 1 tiến trình chờ I/O, CPU chuyển sang cái khác.</li><li><span class="kw">Đa nhiệm (Multitasking)</span>: CPU chuyển đổi <strong>rất nhanh</strong> giữa tiến trình (time-sharing) → cảm giác đồng thời.</li></ul>
+          <strong>Mối quan hệ:</strong> Đa nhiệm là <span class="kw">mở rộng</span> của đa chương. Đa chương ưu tiên CPU utilization; đa nhiệm ưu tiên response time.
+          <div class="hb"><strong>Bộ nhớ chính đa nhiệm chứa:</strong> Kernel HĐH + tất cả tiến trình đang chạy. <strong>Lệnh phải nằm trong RAM</strong> để CPU thực thi được.</div>
+        </div><span class="star-pill" onclick="openPopup('Đa nhiệm và Đa chương','Đa chương: nhiều chương trình trong RAM. Đa nhiệm: CPU luân phiên nhanh, cảm giác đồng thời. Đa nhiệm mở rộng đa chương.',event)">⭐ Chat về chủ đề này</span></div>
+      </div>
+      <div class="tb-block">
+        <div class="tb-block-head" onclick="toggleTb(this)"><div class="td" style="background:var(--ch1)"></div><div class="tq">Real-time OS đặc điểm gì? Môi trường Client-Server có đặc trưng gì?</div><span class="ta">▶</span></div>
+        <div class="tb-ans"><div class="ai-wrap">
+          <strong>HĐH thời gian thực (Real-time OS):</strong>
+          <ul class="ul"><li>Đáp ứng sự kiện trong <span class="kw">thời hạn cố định (deadline)</span></li><li>Hard real-time: deadline tuyệt đối; Soft real-time: linh hoạt hơn</li><li><strong class="bad">Khó khăn lập trình:</strong> đảm bảo không bao giờ trễ deadline</li></ul>
+          <strong>Client-Server:</strong>
+          <ul class="ul"><li>Client gửi <strong>yêu cầu (request)</strong> → Server xử lý → trả <strong>response</strong></li><li>Đặc trưng: phân tán, 1 server phục vụ nhiều client</li></ul>
+        </div><span class="star-pill" onclick="openPopup('Real-time OS và Client-Server','Real-time OS đáp ứng trong deadline cố định. Khó khăn: đảm bảo không trễ. Client-Server: phân tán, client gửi request, server trả response.',event)">⭐ Chat về chủ đề này</span></div>
+      </div>
+      <div class="tb-block">
+        <div class="tb-block-head" onclick="toggleTb(this)"><div class="td" style="background:var(--ch1)"></div><div class="tq">GNU là gì? GPL là gì? Quản lý bộ nhớ chính gồm những công việc nào?</div><span class="ta">▶</span></div>
+        <div class="tb-ans"><div class="ai-wrap">
+          <ul class="ul"><li><span class="kw">GNU</span>: dự án phần mềm tự do (Richard Stallman — "GNU's Not Unix")</li><li><span class="kw">GPL</span> (GNU General Public License): giấy phép nguồn mở — ai sử dụng phải <strong>chia sẻ lại mã nguồn</strong></li></ul>
+          <strong>Quản lý bộ nhớ chính:</strong>
+          <ul class="ul"><li>Theo dõi vùng nhớ đang dùng / còn trống</li><li>Cấp phát bộ nhớ cho tiến trình khi cần</li><li>Giải phóng khi tiến trình kết thúc</li><li>Quyết định tiến trình nào được nạp vào RAM</li></ul>
+          <div class="hb"><strong>"Người dùng định danh bằng ID+mật khẩu, có hoặc không quyền chạy chương trình"</strong> → mô tả nhiệm vụ của <strong>Security Manager (bộ quản lý bảo mật)</strong>.</div>
+        </div><span class="star-pill" onclick="openPopup('GNU, GPL và Quản lý bộ nhớ','GNU: dự án phần mềm tự do. GPL: phải chia sẻ mã nguồn. Quản lý bộ nhớ: theo dõi, cấp phát, giải phóng. Security Manager: xác thực ID+mật khẩu.',event)">⭐ Chat về chủ đề này</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CH2 -->
+  <div class="ch-wrap" id="ch2">
+    <div class="ch-head" onclick="toggleCh('ch2')">
+      <span class="ch-tag" style="background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);color:var(--ch2)">CH.02</span>
+      <span class="ch-title-txt" style="color:var(--ch2)">Cấu Trúc Hệ Điều Hành</span>
+      <span class="ch-toggle">▶</span>
+    </div>
+    <div class="ch-body">
+      <div class="tb-block">
+        <div class="tb-block-head" onclick="toggleTb(this)"><div class="td" style="background:var(--ch2)"></div><div class="tq">System Call là gì? Lập trình viên tiếp cận qua phương tiện gì? API của Linux là thư viện nào?</div><span class="ta">▶</span></div>
+        <div class="tb-ans"><div class="ai-wrap">
+          <strong>System Call:</strong> giao diện lập trình giữa ứng dụng (User Mode) và kernel (Kernel Mode). <span class="kw">Cách duy nhất</span> User Mode yêu cầu dịch vụ kernel.
+          <ul class="ul"><li>Lập trình viên tiếp cận qua <span class="kw">API (Application Programming Interface)</span></li><li>API Linux = thư viện <span class="kw">glibc</span> (GNU C Library)</li><li>Người dùng bình thường: tiếp cận qua <strong>Shell</strong> (CLI/GUI/Touch)</li></ul>
+          <div class="hb"><strong>5 nhóm System Call:</strong> (1) Quản lý tiến trình: fork/exec/exit/wait &nbsp;(2) Quản lý file: open/read/write/close &nbsp;(3) Quản lý thiết bị &nbsp;(4) Thông tin hệ thống &nbsp;(5) Giao tiếp: pipe/socket</div>
+        </div><span class="star-pill" onclick="openPopup('System Call và API','System Call là giao diện duy nhất giữa User Mode và Kernel. Lập trình viên dùng qua API. Linux API = glibc. 5 nhóm: tiến trình, file, thiết bị, thông tin, giao tiếp.',event)">⭐ Chat về chủ đề này</span></div>
+      </div>
+      <div class="tb-block">
+        <div class="tb-block-head" onclick="toggleTb(this)"><div class="td" style="background:var(--ch2)"></div><div class="tq">CLI/GUI/Touch gọi chung là gì? Linker là gì? Ứng dụng lỗi tạo tập tin nào?</div><span class="ta">▶</span></div>
+        <div class="tb-ans"><div class="ai-wrap">
+          <ul class="ul"><li>CLI/GUI/Touch → gọi chung là <span class="kw">Shell</span> hoặc <span class="kw">User Interface</span></li><li><span class="kw">Linker</span>: kết hợp nhiều <strong>object files</strong> thành 1 executable</li><li><span class="kw">Loader</span>: nạp executable vào RAM để thực thi</li><li>Ứng dụng crash tạo <span class="kw">core dump file</span> — lưu toàn bộ bộ nhớ tiến trình tại thời điểm lỗi</li></ul>
+          <strong>Đối tượng sử dụng dịch vụ HĐH:</strong> người dùng (qua Shell) và lập trình viên (qua API).
+        </div><span class="star-pill" onclick="openPopup('Giao diện người dùng, Linker và Core dump','Shell = CLI/GUI/Touch. Linker: kết hợp object files. Loader: nạp vào RAM. Crash → core dump file.',event)">⭐ Chat về chủ đề này</span></div>
+      </div>
+      <div class="tb-block">
+        <div class="tb-block-head" onclick="toggleTb(this)"><div class="td" style="background:var(--ch2)"></div><div class="tq">So sánh 3 kiến trúc HĐH: Monolithic, Layered, Microkernel — lợi/khuyết?</div><span class="ta">▶</span></div>
+        <div class="tb-ans"><div class="ai-wrap">
+          <strong>1. Monolithic (Nguyên khối):</strong>
+          <ul class="ul"><li><strong>Lợi:</strong> hiệu năng cao, gọi hàm trực tiếp trong kernel, không overhead</li><li><strong class="bad">Khuyết:</strong> khó bảo trì; 1 lỗi có thể sập toàn bộ hệ thống</li><li>Ví dụ: Linux, Unix</li></ul>
+          <strong>2. Layered (Phân lớp):</strong>
+          <ul class="ul"><li><strong>Lợi:</strong> dễ debug từng lớp; mỗi lớp chỉ dùng dịch vụ lớp dưới</li><li><strong class="bad">Khuyết:</strong> hiệu năng kém — phải đi qua nhiều lớp (overhead)</li></ul>
+          <strong>3. Microkernel:</strong>
+          <ul class="ul"><li>Kernel nhỏ tối thiểu; hầu hết dịch vụ chạy ở <strong>User Space</strong></li><li>Giao tiếp qua <span class="kw">Message Passing</span></li><li><strong>Lợi:</strong> ổn định, bảo mật &nbsp;<strong class="bad">Khuyết:</strong> chậm hơn do overhead message passing</li></ul>
+          <div class="hb"><strong>Câu hỏi thi:</strong> "Phương pháp cung cấp hầu hết dịch vụ dưới dạng ứng dụng người dùng và giao tiếp bằng truyền thông điệp?" → <strong>Microkernel</strong></div>
+        </div><span class="star-pill" onclick="openPopup('Kiến trúc HĐH: Monolithic vs Layered vs Microkernel','Monolithic: hiệu năng cao, khó bảo trì. Layered: dễ debug, hiệu năng kém. Microkernel: nhỏ, dịch vụ User Space, message passing.',event)">⭐ Chat về chủ đề này</span></div>
+      </div>
+      <div class="tb-block">
+        <div class="tb-block-head" onclick="toggleTb(this)"><div class="td" style="background:var(--ch2)"></div><div class="tq">Mục tiêu phân chia thời gian CPU? Nhân HĐH có vai trò gì? Máy ảo dùng phương pháp nào?</div><span class="ta">▶</span></div>
+        <div class="tb-ans"><div class="ai-wrap">
+          <strong>Phân chia thời gian CPU (Time-sharing):</strong> cho phép nhiều người dùng/tiến trình dùng CPU <strong>công bằng và hiệu quả</strong>. Tạo ảo giác mỗi người có CPU riêng.
+          <strong>Nhân (Kernel):</strong> kiểm soát và quản lý toàn bộ hệ thống; cầu nối giữa phần cứng và phần mềm; thực thi ở Kernel Mode.
+          <strong>Máy ảo:</strong> dùng phương pháp <span class="kw">Abstraction / Virtualization</span>. Mỗi VM nghĩ nó sở hữu toàn bộ phần cứng.
+        </div><span class="star-pill" onclick="openPopup('Time-sharing, Kernel và Máy ảo','Time-sharing: CPU chia đều cho nhiều tiến trình. Kernel: kiểm soát mọi thứ ở Kernel Mode. Máy ảo: abstraction/virtualization.',event)">⭐ Chat về chủ đề này</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CH3 -->
+  <div class="ch-wrap" id="ch3">
+    <div class="ch-head" onclick="toggleCh('ch3')">
+      <span class="ch-tag" style="background:rgba(255,209,102,.1);border:1px solid rgba(255,209,102,.3);color:var(--ch3)">CH.03</span>
+      <span class="ch-title-txt" style="color:var(--ch3)">Tiến Trình & Liên Lạc (IPC)</span>
+      <span class="ch-toggle">▶</span>
+    </div>
+    <div class="ch-body">
+      <div class="tb-block">
+        <div class="tb-block-head" onclick="toggleTb(this)"><div class="td" style="background:var(--ch3)"></div><div class="tq">Tiến trình (Process) là gì? Bố cục bộ nhớ gồm những gì? 5 trạng thái?</div><span class="ta">▶</span></div>
+        <div class="tb-ans"><div class="ai-wrap">
+          <strong>Tiến trình:</strong> <span class="kw">chương trình đang được thực thi</span>. Trở thành tiến trình khi được <strong>nạp vào RAM và bắt đầu chạy</strong>.
+          <strong>Bố cục bộ nhớ:</strong>
+          <ul class="ul"><li><span class="kw">Text</span>: mã lệnh (read-only)</li><li><span class="kw">Data</span>: biến toàn cục và static</li><li><span class="kw">Heap</span>: cấp phát động (malloc/new) — tăng lên trên</li><li><span class="kw">Stack</span>: biến cục bộ, tham số hàm — tăng xuống dưới</li></ul>
+          <div class="hb"><strong>5 trạng thái:</strong> <strong>New</strong> → <strong>Ready</strong> → <strong>Running</strong> → <strong>Waiting</strong> → <strong>Terminated</strong><br>Ready→Running (scheduler chọn) | Running→Waiting (chờ I/O) | Waiting→Ready (I/O xong)<br><span class="bad">❌ Không tồn tại:</span> Waiting → Running trực tiếp</div>
+        </div><span class="star-pill" onclick="openPopup('Tiến trình và bố cục bộ nhớ','Process = chương trình đang thực thi. Bộ nhớ: Text+Data+Heap+Stack. 5 trạng thái: New/Ready/Running/Waiting/Terminated. Waiting→Running trực tiếp: KHÔNG tồn tại.',event)">⭐ Chat về chủ đề này</span></div>
+      </div>
+      <div class="tb-block">
+        <div class="tb-block-head" onclick="toggleTb(this)"><div class="td" style="background:var(--ch3)"></div><div class="tq">PCB là gì? Context Switch xảy ra khi nào? Bước đầu tiên phải làm gì?</div><span class="ta">▶</span></div>
+        <div class="tb-ans"><div class="ai-wrap">
+          <strong>PCB (Process Control Block):</strong> cấu trúc dữ liệu lưu toàn bộ thông tin tiến trình: PID, trạng thái, PC, thanh ghi CPU, thông tin bộ nhớ, I/O, lập lịch. Hàng đợi dùng <span class="kw">linked list</span>.
+          <strong>Context Switch:</strong>
+          <ul class="ul"><li><strong>Bước đầu tiên:</strong> <span class="kw">lưu PCB của tiến trình đang chạy</span> → nạp PCB tiến trình tiếp theo</li><li><strong>Xảy ra khi:</strong> ngắt, system call, time quantum hết</li><li><strong>Mục tiêu:</strong> cho phép đa nhiệm</li><li><strong class="bad">Hạn chế:</strong> tốn thời gian, trong khi chuyển CPU không làm được việc hữu ích (pure overhead)</li></ul>
+        </div><span class="star-pill" onclick="openPopup('PCB và Context Switch','PCB lưu: PID, trạng thái, PC, thanh ghi, bộ nhớ, I/O. Linked list. Context switch: bước đầu tiên = lưu PCB tiến trình đang chạy. Hạn chế: overhead thuần.',event)">⭐ Chat về chủ đề này</span></div>
+      </div>
+      <div class="tb-block">
+        <div class="tb-block-head" onclick="toggleTb(this)"><div class="td" style="background:var(--ch3)"></div><div class="tq">fork() trong UNIX: giá trị trả về? Tiến trình con thừa kế gì? Công thức tính số tiến trình?</div><span class="ta">▶</span></div>
+        <div class="tb-ans"><div class="ai-wrap">
+          <strong>fork():</strong> tạo tiến trình con bằng cách <span class="kw">nhân đôi tiến trình cha</span>.
+          <strong>Giá trị trả về:</strong>
+          <ul class="ul"><li><span class="kw">0</span> → trong tiến trình <strong>con</strong></li><li><span class="kw">PID của con</span> → trong tiến trình <strong>cha</strong></li><li><span class="kw">-1</span> → lỗi</li></ul>
+          <strong>Tiến trình con thừa kế từ cha:</strong> code, data, file descriptors, environment. <span class="note">Không thừa kế:</span> memory locks, pending signals (có PID riêng).
+          <div class="hb p"><strong>Công thức:</strong> n lần fork() <strong>không có điều kiện</strong> → tạo ra <strong>2ⁿ tiến trình</strong> (bao gồm tiến trình gốc). Ví dụ: 3 fork = 8 tiến trình.</div>
+        </div><span class="star-pill" onclick="openPopup('fork() và tạo tiến trình','fork() nhân đôi cha. Trả về 0 trong con, PID_con trong cha. Con thừa kế code/data/files. n lần fork = 2^n tiến trình.',event)">⭐ Chat về chủ đề này</span></div>
+      </div>
+      <div class="tb-block">
+        <div class="tb-block-head" onclick="toggleTb(this)"><div class="td" style="background:var(--ch3)"></div><div class="tq">IPC là gì? 2 phương pháp? Tối thiểu phải có thao tác nào?</div><span class="ta">▶</span></div>
+        <div class="tb-ans"><div class="ai-wrap">
+          <span class="kw">IPC = Inter-Process Communication</span> (Giao tiếp liên tiến trình).
+          <ul class="ul"><li><span class="kw">Shared Memory</span>: các tiến trình đọc/ghi vùng nhớ chung. <strong>Nhanh</strong>, cùng máy. Cần đồng bộ hoá.</li><li><span class="kw">Message Passing</span>: gửi/nhận thông điệp qua kernel. Dễ dùng, phù hợp <strong>hệ thống phân tán</strong>.</li></ul>
+          Tối thiểu phải có: <span class="kw">send()</span> và <span class="kw">receive()</span>.
+          <div class="hb"><strong>2 hình thức giao tiếp server-client phổ biến:</strong> <strong>Sockets</strong> và <strong>Remote Procedure Calls (RPCs)</strong></div>
+        </div><span class="star-pill" onclick="openPopup('IPC: Shared Memory vs Message Passing','IPC = Inter-Process Communication. Shared Memory: nhanh, cùng máy. Message Passing: dễ, phân tán. Phải có send + receive.',event)">⭐ Chat về chủ đề này</span></div>
+      </div>
+      <div class="tb-block">
+        <div class="tb-block-head" onclick="toggleTb(this)"><div class="td" style="background:var(--ch3)"></div><div class="tq">Direct vs Indirect communication? Non-blocking send? Zero capacity queue? Pipe là gì?</div><span class="ta">▶</span></div>
+        <div class="tb-ans"><div class="ai-wrap">
+          <strong>Direct:</strong> P gửi thẳng cho Q — phải biết tên/PID nhau. Mỗi cặp có đúng 1 link.
+          <strong>Indirect:</strong> qua <span class="kw">mailbox/port</span> — P và Q không cần biết nhau. Nhiều tiến trình dùng cùng mailbox được.
+          <strong>Non-blocking send:</strong> người gửi <span class="kw">không chờ</span>, tiếp tục ngay sau khi gửi (asynchronous).
+          <strong>Zero capacity queue:</strong>
+          <ul class="ul"><li>Không có buffer → người gửi <strong>phải chặn (block)</strong> cho đến khi người nhận sẵn sàng</li><li>Gọi là <span class="kw">rendezvous</span></li><li>Dùng trong <strong>real-time</strong> và synchronous IPC</li></ul>
+          <strong>Pipe:</strong>
+          <ul class="ul"><li><span class="kw">Ordinary pipe</span>: 1 chiều, <strong>cha-con</strong></li><li><span class="kw">Named pipe (FIFO)</span>: 2 chiều, không cần quan hệ cha-con</li></ul>
+          Dung lượng có hạn/vô hạn là tính chất của <span class="kw">hàng đợi thông điệp (message queue)</span>.
+        </div><span class="star-pill" onclick="openPopup('Direct/Indirect Communication, Zero capacity và Pipe','Direct: biết nhau, 1 link. Indirect: qua mailbox. Non-blocking: không chờ. Zero capacity: rendezvous, block. Ordinary pipe: cha-con. Named pipe: không cần quan hệ.',event)">⭐ Chat về chủ đề này</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CH4 -->
+  <div class="ch-wrap" id="ch4">
+    <div class="ch-head" onclick="toggleCh('ch4')">
+      <span class="ch-tag" style="background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.3);color:var(--ch4)">CH.04</span>
+      <span class="ch-title-txt" style="color:var(--ch4)">Tiểu Trình & Đồng Thời (Threads)</span>
+      <span class="ch-toggle">▶</span>
+    </div>
+    <div class="ch-body">
+      <div class="tb-block">
+        <div class="tb-block-head" onclick="toggleTb(this)"><div class="td" style="background:var(--ch4)"></div><div class="tq">Thread là gì? Chia sẻ gì với các thread khác? Dữ liệu riêng là gì?</div><span class="ta">▶</span></div>
+        <div class="tb-ans"><div class="ai-wrap">
+          <strong>Thread (Tiểu trình/Luồng):</strong> đơn vị thực thi nhỏ nhất bên trong một tiến trình.
+          <strong>Chia sẻ giữa các thread cùng process:</strong> Code (Text), Data, Heap, File descriptors.
+          <strong>Dữ liệu RIÊNG của mỗi thread:</strong>
+          <ul class="ul"><li><span class="kw">Stack</span> (biến cục bộ, tham số)</li><li><span class="kw">Thanh ghi CPU</span></li><li><span class="kw">Program Counter (PC)</span></li><li>Thread ID</li></ul>
+          Thư viện đa luồng Linux: <span class="kw">POSIX Pthreads</span> (pthread.h).
+          <div class="hb"><strong>Lợi:</strong> tạo nhanh hơn process, chia sẻ tài nguyên dễ, tận dụng đa nhân, responsive.<br><strong class="bad">Khuyết:</strong> 1 thread lỗi → sập cả process; race condition, deadlock phức tạp.</div>
+        </div><span class="star-pill" onclick="openPopup('Thread: chia sẻ và dữ liệu riêng','Thread: đơn vị thực thi nhỏ nhất. Chia sẻ: code/data/heap/files. Riêng: stack/PC/thanh ghi. Pthreads trên Linux.',event)">⭐ Chat về chủ đề này</span></div>
+      </div>
+      <div class="tb-block">
+        <div class="tb-block-head" onclick="toggleTb(this)"><div class="td" style="background:var(--ch4)"></div><div class="tq">3 mô hình ánh xạ thread? Mô hình nào phổ biến nhất? Mô hình nào KHÔNG tồn tại?</div><span class="ta">▶</span></div>
+        <div class="tb-ans"><div class="ai-wrap">
+          <strong>1. Many-to-One:</strong> nhiều user thread → 1 kernel thread. Nhanh nhưng <strong class="bad">1 block = tất cả block</strong>, không tận dụng đa nhân.
+          <strong>2. One-to-One</strong> ⭐ (phổ biến nhất):
+          <ul class="ul"><li>1 user thread → 1 kernel thread. Dùng trong <span class="kw">Windows và Linux</span>.</li><li><strong class="bad">Khuyết:</strong> tạo nhiều kernel thread → tốn tài nguyên kernel</li></ul>
+          <strong>3. Many-to-Many:</strong> linh hoạt nhất; phức tạp nhất.
+          <div class="hb"><strong class="bad">KHÔNG TỒN TẠI:</strong> mô hình <strong>One-to-Many</strong> — câu bẫy kinh điển trong đề thi!</div>
+        </div><span class="star-pill" onclick="openPopup('Mô hình ánh xạ Thread','Many-to-One: 1 block = all block. One-to-One: phổ biến nhất (Windows+Linux), khuyết: tốn tài nguyên kernel. Many-to-Many: linh hoạt nhất. KHÔNG TỒN TẠI: One-to-Many.',event)">⭐ Chat về chủ đề này</span></div>
+      </div>
+      <div class="tb-block">
+        <div class="tb-block-head" onclick="toggleTb(this)"><div class="td" style="background:var(--ch4)"></div><div class="tq">Parallelism vs Concurrency? Data parallelism? Định luật Amdahl tính thế nào?</div><span class="ta">▶</span></div>
+        <div class="tb-ans"><div class="ai-wrap">
+          <ul class="ul"><li><span class="kw">Parallelism (Song song)</span>: thực sự chạy cùng lúc trên <strong>nhiều nhân CPU</strong>. Cần phần cứng đa nhân.</li><li><span class="kw">Concurrency (Đồng thời)</span>: luân phiên nhanh trên <strong>1 nhân</strong>, cảm giác đồng thời.</li><li><span class="kw">Data parallelism</span>: phân chia <strong>dữ liệu</strong> thành nhiều phần, cùng thao tác trên mỗi phần (ví dụ: nhân ma trận, merge sort).</li></ul>
+          <div class="hb p">
+            <strong>Định luật Amdahl:</strong> Speedup = 1 / ((1-S) + S/N) &nbsp;| &nbsp;S = phần song song, N = số nhân<br><br>
+            <strong>Ví dụ 1:</strong> S=0.75, N=2: 1 / (0.25 + 0.375) = 1/0.625 = <strong>1.6×</strong><br>
+            <strong>Ví dụ 2:</strong> S=0.75, N=4: 1 / (0.25 + 0.1875) = 1/0.4375 ≈ <strong>2.29×</strong>
+          </div>
+        </div><span class="star-pill" onclick="openPopup('Parallelism vs Concurrency và Amdahl','Song song: nhiều nhân thực sự cùng lúc. Đồng thời: luân phiên 1 nhân. Amdahl: Speedup = 1/((1-S)+S/N). Ví dụ: 75% song song, 2 nhân = 1.6x.',event)">⭐ Chat về chủ đề này</span></div>
+      </div>
+      <div class="tb-block">
+        <div class="tb-block-head" onclick="toggleTb(this)"><div class="td" style="background:var(--ch4)"></div><div class="tq">Deferred cancellation là gì? Bài toán nào không thể áp dụng đa luồng?</div><span class="ta">▶</span></div>
+        <div class="tb-ans"><div class="ai-wrap">
+          <strong>Deferred Cancellation:</strong> thread bị đánh dấu để huỷ nhưng <strong>không kết thúc ngay</strong>. Thực sự kết thúc tại <span class="kw">cancellation point</span> (điểm an toàn) tiếp theo — tránh để lại tài nguyên chưa giải phóng.
+          <strong>Bài toán KHÔNG thể đa luồng:</strong> có <span class="kw">sequential dependency</span> — mỗi bước phụ thuộc kết quả bước trước.
+          <ul class="ul"><li>Ví dụ: n! = n×(n-1)×... (phải tuần tự)</li><li><strong>CÓ THỂ đa luồng:</strong> Merge Sort (chia song song), nhân ma trận (mỗi phần tử độc lập)</li></ul>
+        </div><span class="star-pill" onclick="openPopup('Deferred Cancellation và bài toán đa luồng','Deferred cancellation: kết thúc tại cancellation point an toàn. Không thể đa luồng: sequential dependency (n!). Có thể: Merge Sort, nhân ma trận.',event)">⭐ Chat về chủ đề này</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CH5 -->
+  <div class="ch-wrap" id="ch5">
+    <div class="ch-head" onclick="toggleCh('ch5')">
+      <span class="ch-tag" style="background:rgba(179,136,255,.1);border:1px solid rgba(179,136,255,.3);color:var(--ch5)">CH.05A</span>
+      <span class="ch-title-txt" style="color:var(--ch5)">Lập Lịch CPU Cơ Bản</span>
+      <span class="ch-toggle">▶</span>
+    </div>
+    <div class="ch-body">
+      <div class="tb-block">
+        <div class="tb-block-head" onclick="toggleTb(this)"><div class="td" style="background:var(--ch5)"></div><div class="tq">Lập lịch CPU là gì? Dispatcher làm gì? 5 tiêu chí đánh giá bộ lập lịch?</div><span class="ta">▶</span></div>
+        <div class="tb-ans"><div class="ai-wrap">
+          <strong>CPU Scheduling:</strong> chọn tiến trình từ <span class="kw">Ready Queue</span> để cấp CPU. Chỉ tiến trình ở trạng thái <strong>Ready</strong> mới được xem xét.
+          Tiến trình là chu kỳ xen kẽ: <span class="kw">CPU Burst</span> (tính toán) + <span class="kw">I/O Burst</span> (chờ I/O).
+          <strong>Dispatcher:</strong> thực hiện chuyển CPU sang tiến trình được chọn. Chạy ở <span class="kw">Kernel Mode</span>. Công việc: context switch + chuyển User Mode + nhảy đến PC.
+          <strong>5 tiêu chí:</strong>
+          <ul class="ul"><li><span class="kw">CPU Utilization</span>: tối đa (max)</li><li><span class="kw">Throughput</span>: số tiến trình/giây (max)</li><li><span class="kw">Turnaround time</span> = Completion − Arrival (min)</li><li><span class="kw">Waiting time</span> = tổng thời gian trong Ready Queue (min)</li><li><span class="kw">Response time</span> = thời gian từ yêu cầu đến phản hồi đầu tiên (min)</li></ul>
+        </div><span class="star-pill" onclick="openPopup('CPU Scheduling và Dispatcher','Scheduling: chọn từ Ready Queue. Dispatcher: Kernel Mode, context switch + User Mode + jump PC. 5 tiêu chí: Utilization, Throughput, Turnaround, Waiting, Response.',event)">⭐ Chat về chủ đề này</span></div>
+      </div>
+      <div class="tb-block">
+        <div class="tb-block-head" onclick="toggleTb(this)"><div class="td" style="background:var(--ch5)"></div><div class="tq">Preemptive và Non-preemptive: khi nào CPU bị lấy lại? Khi nào tiến trình trả CPU?</div><span class="ta">▶</span></div>
+        <div class="tb-ans"><div class="ai-wrap">
+          <strong>Preemptive (Chiếm quyền):</strong> HĐH cưỡng chế lấy CPU khi:
+          <ul class="ul"><li>Ngắt (interrupt) xảy ra</li><li>Time quantum hết</li><li>Tiến trình mới có <strong>ưu tiên cao hơn</strong> tiến trình đang chạy</li></ul>
+          <strong>Non-preemptive (Không chiếm quyền):</strong> tiến trình tự nguyện trả CPU khi:
+          <ul class="ul"><li>Tiến trình <strong>kết thúc</strong></li><li>Tiến trình chuyển sang <strong>Waiting</strong> (chờ I/O)</li></ul>
+          <div class="hb"><strong>"Giữ quyền ưu tiên (Preemptive) là khả năng gì?"</strong> → khả năng lấy CPU từ tiến trình đang chạy để cấp cho tiến trình khác.</div>
+        </div><span class="star-pill" onclick="openPopup('Preemptive vs Non-preemptive','Preemptive: HĐH lấy CPU khi ngắt/quantum hết/tiến trình ưu tiên cao hơn. Non-preemptive: tiến trình tự nhả khi kết thúc hoặc vào I/O Waiting.',event)">⭐ Chat về chủ đề này</span></div>
+      </div>
+      <div class="tb-block">
+        <div class="tb-block-head" onclick="toggleTb(this)"><div class="td" style="background:var(--ch5)"></div><div class="tq">4 giải thuật lập lịch: FCFS, SJF, Priority, Round Robin — hạn chế từng loại?</div><span class="ta">▶</span></div>
+        <div class="tb-ans"><div class="ai-wrap">
+          <strong>FCFS (First-Come First-Served):</strong> không chiếm quyền, đơn giản. <strong class="bad">Hạn chế: Convoy Effect</strong> — tiến trình ngắn chờ tiến trình dài.
+          <strong>SJF (Shortest Job First):</strong> ưu tiên tiến trình ngắn nhất. <strong>Lợi: tối ưu waiting time trung bình.</strong> <strong class="bad">Hạn chế: Starvation</strong> + <strong>khó dự đoán CPU burst tiếp theo</strong>.
+          <strong>Priority Scheduling:</strong> <strong class="bad">Hạn chế: Starvation.</strong> <strong>Giải pháp: <span class="kw">Aging</span></strong> — tăng dần ưu tiên theo thời gian chờ.
+          <strong>Round Robin (RR):</strong> mỗi tiến trình chạy tối đa quantum <em>q</em>.
+          <ul class="ul"><li><strong>Lợi:</strong> response time tốt, công bằng</li><li><strong class="bad">Hạn chế:</strong> q quá nhỏ → quá nhiều context switch (overhead); q quá lớn → degrades to FCFS</li></ul>
+          <div class="hb p"><strong>Công thức RR:</strong> n tiến trình, quantum q → thời gian chờ giữa 2 lần vào CPU liên tiếp = <strong>(n−1) × q</strong></div>
+        </div><span class="star-pill" onclick="openPopup('4 giải thuật lập lịch CPU','FCFS: convoy effect. SJF: optimal WT, starvation, khó predict. Priority: starvation → aging. RR: quantum q, response tốt, q nhỏ = nhiều context switch, q lớn = FCFS.',event)">⭐ Chat về chủ đề này</span></div>
+      </div>
+      <div class="tb-block">
+        <div class="tb-block-head" onclick="toggleTb(this)"><div class="td" style="background:var(--ch5)"></div><div class="tq">Bài tập tính FCFS Waiting Time và Turnaround Time?</div><span class="ta">▶</span></div>
+        <div class="tb-ans"><div class="ai-wrap">
+          <strong>Công thức:</strong> WT = TAT − CPU Burst &nbsp;|&nbsp; TAT = Completion − Arrival &nbsp;|&nbsp; Avg = Tổng / n
+          <div class="hb p">
+            <strong>Ví dụ 1 (Avg Waiting Time):</strong><br>
+            P1=15ms, P2=6ms, P3=20ms (arrival=0, FCFS)<br>
+            WT(P1)=0 &nbsp;| &nbsp;WT(P2)=15 &nbsp;| &nbsp;WT(P3)=15+6=21<br>
+            <strong>Avg WT = (0+15+21)/3 = 12ms</strong>
+            <br><br>
+            <strong>Ví dụ 2 (Avg Turnaround Time):</strong><br>
+            P1=24ms, P2=6ms, P3=10ms (arrival=0, FCFS)<br>
+            Completion: P1=24, P2=30, P3=40<br>
+            <strong>Avg TAT = (24+30+40)/3 = 31.33ms</strong>
+          </div>
+        </div><span class="star-pill" onclick="openPopup('Bài tập tính FCFS Waiting Time và Turnaround Time','WT = TAT - CPU Burst. TAT = Completion - Arrival. Ví dụ FCFS: P1=15,P2=6,P3=20 → Avg WT=12ms. P1=24,P2=6,P3=10 → Avg TAT=31.33ms.',event)">⭐ Chat về chủ đề này</span></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /study -->
+
+<!-- ══════════════════════════ EXERCISES ══════════════════════════ -->
+<div id="p-exercises" class="panel">
+  <div style="margin-bottom:20px"><h2 style="font-size:24px;font-weight:800;margin-bottom:5px">🎯 Luyện Tập</h2><p style="font-size:12px;color:var(--mu)">AI tạo bài tập từ toàn bộ kiến thức của bạn</p></div>
+  <div class="sl">DẠNG BÀI</div>
+  <div class="ex-grid">
+    <button class="etb" id="et-qa" onclick="selET('qa')"><div class="ee">❓</div><div class="en">Q&A MCQ</div><div class="ed">Trắc nghiệm 4 đáp án</div></button>
+    <button class="etb" id="et-truefalse" onclick="selET('truefalse')"><div class="ee">✅</div><div class="en">Đúng / Sai</div><div class="ed">Phán đoán phát biểu</div></button>
+    <button class="etb" id="et-fillin" onclick="selET('fillin')"><div class="ee">📝</div><div class="en">Điền chỗ trống</div><div class="ed">Hoàn thành định nghĩa</div></button>
+    <button class="etb" id="et-flashcard" onclick="selET('flashcard')"><div class="ee">🃏</div><div class="en">Flashcard</div><div class="ed">Lật thẻ thuật ngữ</div></button>
+    <button class="etb" id="et-scenario" onclick="selET('scenario')"><div class="ee">🧮</div><div class="en">Tính toán</div><div class="ed">FCFS / RR / Amdahl</div></button>
+  </div>
+  <div class="cfg">
+    <div class="cf"><label>Chương</label>
+      <select id="ex-ch">
+        <option value="all">Tất cả chương (Ch.1–5A)</option>
+        <option value="ch1">Ch.1 — Giới Thiệu</option>
+        <option value="ch2">Ch.2 — Cấu Trúc HĐH</option>
+        <option value="ch3">Ch.3 — Tiến Trình & IPC</option>
+        <option value="ch4">Ch.4 — Tiểu Trình</option>
+        <option value="ch5">Ch.5A — Lập Lịch CPU</option>
+      </select>
+    </div>
+    <div class="cf"><label>Số câu</label>
+      <select id="ex-cnt"><option value="3">3</option><option value="5" selected>5</option><option value="8">8</option><option value="10">10</option></select>
+    </div>
+    <button class="gbtn" id="gbtn" onclick="genEx()" disabled>✦ Tạo bài tập</button>
+  </div>
+  <div id="ex-out"></div>
+</div>
+
+<!-- ══════════════════════════ CHAT ══════════════════════════ -->
+<div id="p-chat" class="panel">
+  <div class="cw">
+    <div class="ch2"><h2>💬 AI Tutor Chat</h2><p>Toàn bộ kiến thức Ch.1–5A đã được nạp — hỏi bất kỳ điều gì</p></div>
+    <div class="chips" id="chips"></div>
+    <div class="mbox" id="msgs"><div class="empty"><div class="ico">🎓</div><div>AI đã đọc toàn bộ tài liệu của bạn<br>Hãy hỏi bất kỳ điều gì về HĐH!</div></div></div>
+    <div class="ir">
+      <input id="mi" placeholder="Hỏi về OS, giải thích khái niệm, tính bài tập..." onkeydown="if(event.key==='Enter'&&!event.shiftKey)sendMain()">
+      <button id="msb" onclick="sendMain()">↑</button>
+    </div>
+  </div>
+</div>
+</div><!-- /wrap -->
+
+<!-- POPUP CHAT -->
+<div id="popup">
+  <div class="ph">
+    <span class="ph-icon">⭐</span>
+    <div style="flex:1"><div class="ph-topic" id="ph-topic">Topic</div><div class="ph-sub">Hỏi riêng về chủ đề này</div></div>
+    <button class="pc" onclick="closePopup()">×</button>
+  </div>
+  <div class="pm-wrap" id="pm-wrap"><div class="p-snip" id="p-snip"></div></div>
+  <div class="pi-row">
+    <input id="pi" placeholder="Hỏi về khái niệm này..." onkeydown="if(event.key==='Enter')sendPopup()">
+    <button id="pi-btn" onclick="sendPopup()">↑</button>
+  </div>
+</div>
+
+<script>
+// ╔══════════════════════════════════════════════════════════╗
+// ║  BACKEND CONFIG                                         ║
+// ║  Paste your ngrok URL here every time you restart Colab ║
+// ╚══════════════════════════════════════════════════════════╝
+const NGROK_URL = 'https://notably-valid-bunny.ngrok-free.app';  // ← PASTE HERE
+
+// Required header — without this ngrok intercepts responses with an HTML warning page
+const HEADERS = {
+  'Content-Type': 'application/json',
+  'ngrok-skip-browser-warning': 'true'
+};
+
+// ─────────────────────────────────────────
+// Core fetch wrapper — used by all API calls
+// ─────────────────────────────────────────
+async function apiPost(path, body) {
+  const res = await fetch(`${NGROK_URL}${path}`, {
+    method: 'POST',
+    headers: HEADERS,
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`);
+  }
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+
+// ─────────────────────────────────────────
+// Chat endpoint wrapper
+// ─────────────────────────────────────────
+async function callChat(message, history = [], topicContext = '') {
+  const data = await apiPost('/chat', {
+    message,
+    history: history.slice(-10),
+    topic_context: topicContext
+  });
+  return data.response;
+}
+
+// ─────────────────────────────────────────
+// Exercise generation endpoint wrapper
+// ─────────────────────────────────────────
+async function callGenerateExercises(type, chapter, count) {
+  const data = await apiPost('/generate_exercises', { type, chapter, count });
+  return data.exercises;
+}
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  CONNECTION CHECK — pings /health on load               ║
+// ╚══════════════════════════════════════════════════════════╝
+async function checkConn() {
+  const dot = document.getElementById('conn-dot');
+  const lbl = document.getElementById('conn-label');
+  dot.className = 'checking'; lbl.className = ''; lbl.textContent = 'đang kết nối...';
+  try {
+    const res = await fetch(`${NGROK_URL}/health`, { headers: HEADERS });
+    if (res.ok) {
+      dot.className = 'ok'; lbl.className = 'ok'; lbl.textContent = 'ngrok ✓ connected';
+    } else {
+      throw new Error('not ok');
+    }
+  } catch(e) {
+    dot.className = 'err'; lbl.className = 'err'; lbl.textContent = 'tunnel offline';
+  }
+}
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  INIT                                                   ║
+// ╚══════════════════════════════════════════════════════════╝
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('ch1').querySelector('.ch-body').style.display = 'block';
+  document.getElementById('ch1').querySelector('.tb-ans').style.display = 'block';
+  buildChips();
+  checkConn();
+  setInterval(checkConn, 30000);
+});
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  NAVIGATION                                             ║
+// ╚══════════════════════════════════════════════════════════╝
+function go(tab, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('.tb').forEach(b => b.classList.remove('on'));
+  document.getElementById('p-' + tab).classList.add('on');
+  if (btn) btn.classList.add('on');
+}
+
+function toggleCh(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('open');
+  el.querySelector('.ch-body').style.display = el.classList.contains('open') ? 'block' : 'none';
+}
+function toggleTb(head) {
+  const block = head.parentElement;
+  block.classList.toggle('open');
+  block.querySelector('.tb-ans').style.display = block.classList.contains('open') ? 'block' : 'none';
+}
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  POPUP CHAT                                             ║
+// ╚══════════════════════════════════════════════════════════╝
+let popHistory = [], popTopic = '';
+
+function openPopup(topic, snippet, e) {
+  if (e) e.stopPropagation();
+  popTopic = topic; popHistory = [];
+  document.getElementById('ph-topic').textContent = topic;
+  document.getElementById('pm-wrap').innerHTML = `<div class="p-snip">💡 ${snippet}</div>`;
+  document.getElementById('popup').classList.add('show');
+  document.getElementById('pi').focus();
+}
+function closePopup() {
+  document.getElementById('popup').classList.remove('show');
+  popTopic = '';popHistory = [];
+}
+
+async function sendPopup() {
+  const inp = document.getElementById('pi');
+  const btn = document.getElementById('pi-btn');
+  const text = inp.value.trim();
+  if (!text) return;
+  inp.value = ''; btn.disabled = true;
+  appendPm('u', text);
+  popHistory.push({ role: 'user', content: text });
+  const ld = appendPm('a', '✦ đang trả lời...', true);
+  try {
+    const reply = await callChat(text, popHistory.slice(-6), popTopic);
+    ld.remove(); appendPm('a', reply);
+    popHistory.push({ role: 'assistant', content: reply });
+  } catch(err) {
+    ld.remove(); appendPm('a', '⚠️ ' + err.message);
+  }
+  btn.disabled = false;
+}
+
+function appendPm(cls, text, loading = false) {
+  const wrap = document.getElementById('pm-wrap');
+  const d = document.createElement('div');
+  d.className = 'pm ' + cls + (loading ? ' ld' : '');
+  d.textContent = text;
+  wrap.appendChild(d);
+  wrap.scrollTop = wrap.scrollHeight;
+  return d;
+}
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  MAIN CHAT                                              ║
+// ╚══════════════════════════════════════════════════════════╝
+let mainHistory = [], mainLoading = false;
+const QUICK_QS = [
+  'fork() trả về gì trong tiến trình con và cha?',
+  'So sánh Shared Memory và Message Passing',
+  'Tính Amdahl: 75% song song, 4 nhân',
+  'Khác nhau giữa Preemptive và Non-preemptive',
+  'Convoy effect trong FCFS là gì?',
+  'One-to-Many thread model có tồn tại không?',
+  'Context switch: bước đầu tiên là gì?',
+  'Zero capacity queue là gì? Dùng ở đâu?',
+];
+
+function buildChips() {
+  const el = document.getElementById('chips');
+  QUICK_QS.forEach(q => {
+    const b = document.createElement('button');
+    b.className = 'chip'; b.textContent = q;
+    b.onclick = () => { document.getElementById('mi').value = q; sendMain(); };
+    el.appendChild(b);
+  });
+}
+
+async function sendMain() {
+  const inp = document.getElementById('mi');
+  const btn = document.getElementById('msb');
+  const text = inp.value.trim();
+  if (!text || mainLoading) return;
+  inp.value = ''; mainLoading = true; btn.disabled = true;
+  const msgs = document.getElementById('msgs');
+  msgs.querySelector('.empty')?.remove();
+  appendMain('u', text);
+  mainHistory.push({ role: 'user', content: text });
+  const ld = appendMain('a', '✦ đang suy nghĩ...', true);
+  try {
+    const reply = await callChat(text, mainHistory.slice(-10));
+    ld.remove(); appendMain('a', reply);
+    mainHistory.push({ role: 'assistant', content: reply });
+  } catch(err) {
+    ld.remove();
+    appendMain('a', '⚠️ Lỗi: ' + err.message);
+  }
+  mainLoading = false; btn.disabled = false;
+}
+
+function appendMain(cls, text, loading = false) {
+  const msgs = document.getElementById('msgs');
+  const d = document.createElement('div');
+  d.className = 'mf ' + cls + (loading ? ' ld' : '');
+  d.textContent = text;
+  msgs.appendChild(d);
+  msgs.scrollTop = msgs.scrollHeight;
+  return d;
+}
+
+// ╔══════════════════════════════════════════════════════════╗
+// ║  EXERCISES — now uses /generate_exercises endpoint      ║
+// ╚══════════════════════════════════════════════════════════╝
+let selectedET = null, exercises = [], answers = {}, checked = false, flipped = {};
+
+function selET(id) {
+  selectedET = id;
+  document.querySelectorAll('.etb').forEach(b => b.classList.remove('on'));
+  document.getElementById('et-' + id)?.classList.add('on');
+  document.getElementById('gbtn').disabled = false;
+}
+
+async function genEx() {
+  if (!selectedET) return;
+  const gbtn = document.getElementById('gbtn');
+  gbtn.disabled = true; gbtn.textContent = '⟳ Đang tạo...';
+  exercises = []; answers = {}; checked = false; flipped = {};
+  document.getElementById('ex-out').innerHTML = '<div style="color:var(--mu);padding:20px;font-style:italic">AI đang tạo bài tập...</div>';
+
+  const chapter = document.getElementById('ex-ch').value;
+  const count   = parseInt(document.getElementById('ex-cnt').value);
+
+  try {
+    exercises = await callGenerateExercises(selectedET, chapter, count);
+    renderExercises();
+  } catch(e) {
+    document.getElementById('ex-out').innerHTML =
+      `<div style="color:var(--r);padding:16px">⚠️ Lỗi: ${e.message}<br><small>Thử lại hoặc kiểm tra ngrok tunnel.</small></div>`;
+  }
+  gbtn.disabled = false; gbtn.textContent = '✦ Tạo bài tập';
+}
+
+function renderExercises() {
+  const out = document.getElementById('ex-out');
+  if (!exercises.length) { out.innerHTML = '<div style="color:var(--mu)">Không có kết quả.</div>'; return; }
+  let html = `<div style="display:flex;align-items:center;gap:14px;margin-bottom:14px" id="res-row"><span id="sbadge"></span></div><div class="ex-list">`;
+  exercises.forEach((ex, i) => {
+    if (selectedET === 'qa')        html += mkQA(ex, i);
+    else if (selectedET === 'truefalse') html += mkTF(ex, i);
+    else if (selectedET === 'fillin')    html += mkFill(ex, i);
+    else if (selectedET === 'flashcard') html += mkFC(ex, i);
+    else if (selectedET === 'scenario')  html += mkSc(ex, i);
+  });
+  html += '</div>';
+  if (selectedET !== 'flashcard') html += `<div class="acts"><button class="cbtn" onclick="checkEx()">Kiểm tra đáp án ✓</button><button class="rbtn" onclick="resetEx()">Làm lại</button></div>`;
+  out.innerHTML = html;
+}
+
+function mkQA(ex,i){return `<div class="ec" id="ec${i}"><div class="eq">Q${i+1}. ${ex.q}</div><div class="eopts">${(ex.options||[]).map((o,j)=>`<button class="eopt" id="opt${i}${j}" onclick="selQA(${i},'${o[0]}')">${o}</button>`).join('')}</div><div class="eexp" id="exp${i}">💡 ${ex.explain||''}</div></div>`;}
+function mkTF(ex,i){return `<div class="ec" id="ec${i}"><div class="eq">Q${i+1}. ${ex.statement}</div><div class="tf-row"><button class="tf-b t" id="tft${i}" onclick="selTF(${i},true)">✅ Đúng</button><button class="tf-b f" id="tff${i}" onclick="selTF(${i},false)">❌ Sai</button></div><div class="eexp" id="exp${i}">💡 ${ex.explain||''}</div></div>`;}
+function mkFill(ex,i){return `<div class="ec" id="ec${i}"><div class="eq">Q${i+1}. ${ex.sentence}</div>${ex.hint?`<div style="font-size:11px;color:var(--mu);margin-bottom:8px">💡 ${ex.hint}</div>`:''}<input class="fi" id="fi${i}" placeholder="Điền vào..." oninput="answers[${i}]=this.value"><div class="eexp" id="exp${i}">Đáp án: <strong style="color:var(--g)">${ex.answer||''}</strong></div></div>`;}
+function mkFC(ex,i){return `<div class="ec fc-card" id="ec${i}" onclick="flipFC(${i})"><span class="fh">thuật ngữ · click để lật</span><div id="fc${i}"><div class="fc-term">${ex.term}</div></div></div>`;}
+function mkSc(ex,i){return `<div class="ec" id="ec${i}"><div class="eq">🧮 Bài ${i+1}. ${ex.problem}</div>${ex.hint?`<div style="font-size:12px;color:var(--mu);margin-bottom:8px">💡 ${ex.hint}</div>`:''}<textarea class="fi" id="fi${i}" placeholder="Viết lời giải..." oninput="answers[${i}]=this.value"></textarea><div class="sc-ans" id="exp${i}">✅ Lời giải:<br>${ex.answer||''}</div></div>`;}
+
+function selQA(i,l){
+  if(checked)return;answers[i]=l;
+  document.querySelectorAll(`[id^="opt${i}"]`).forEach(b=>{b.classList.remove('sel');if(b.textContent[0]===l)b.classList.add('sel');});
+}
+function selTF(i,v){
+  if(checked)return;answers[i]=v;
+  document.getElementById(`tft${i}`)?.classList.toggle('st',v===true);
+  document.getElementById(`tff${i}`)?.classList.toggle('sf',v===false);
+}
+function flipFC(i){
+  flipped[i]=!flipped[i];
+  const d=document.getElementById(`fc${i}`);
+  d.innerHTML=flipped[i]?`<div class="fc-def">${exercises[i].definition}</div>`:`<div class="fc-term">${exercises[i].term}</div>`;
+  document.getElementById(`ec${i}`).querySelector('.fh').textContent=(flipped[i]?'định nghĩa':'thuật ngữ')+' · click để lật';
+}
+
+function checkEx(){
+  checked=true;let score=0;
+  exercises.forEach((ex,i)=>{
+    const exp=document.getElementById(`exp${i}`);
+    if(exp)exp.style.display='block';
+    if(selectedET==='qa'){
+      const ua=answers[i];const ok=ua===ex.answer;if(ok)score++;
+      document.querySelectorAll(`[id^="opt${i}"]`).forEach(b=>{const l=b.textContent[0];b.classList.remove('sel');if(l===ex.answer)b.classList.add('right');else if(l===ua&&!ok)b.classList.add('bad');});
+      document.getElementById(`ec${i}`).classList.add(ok?'ok':'ng');
+    }else if(selectedET==='truefalse'){
+      const exp2=String(ex.answer)==='true';const ok=answers[i]===exp2;if(ok)score++;
+      document.getElementById(`ec${i}`).classList.add(ok?'ok':'ng');
+    }else if(selectedET==='fillin'){
+      const ok=(answers[i]||'').toLowerCase().trim()===(ex.answer||'').toLowerCase().trim();if(ok)score++;
+      const inp=document.getElementById(`fi${i}`);if(inp)inp.style.borderColor=ok?'var(--g)':'var(--r)';
+    }else if(selectedET==='scenario'){
+      if((answers[i]||'').trim().length>5)score++;
+    }
+  });
+  document.querySelector('.acts')?.remove();
+  const rr=document.getElementById('res-row');
+  if(rr){
+    const sb=document.getElementById('sbadge');
+    if(selectedET!=='flashcard'&&selectedET!=='scenario'){sb.className='sb'+(score<exercises.length?' ng':'');sb.textContent=`${score}/${exercises.length} đúng`;}
+    else{sb.className='sb';sb.textContent='Đã xem đáp án';}
+    rr.innerHTML+=`<button class="rbtn" onclick="resetEx()">Làm lại / Bài mới</button>`;
+  }
+}
+function resetEx(){exercises=[];answers={};checked=false;flipped={};document.getElementById('ex-out').innerHTML='';}
+</script>
+</body>
+</html>
